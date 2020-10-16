@@ -7,15 +7,20 @@ import validators
 
 """ Contains the all the functions for the python scripting tasks in DAT234 """
 
+# Skriver inn url
+# sjekker om den er riktig
+# sjekker subdomains -> legger dette i liste
+# sjekker gjennom lista og kjører requests til hvert subdomain
+# response 200 -> legger til i alive liste
+# ikke response 200 -> legger til not_alive liste
+# Printer ut alive og not_alive liste
+# regner ut differansen og printer ut dette
+# legge til riktig oppgave der den hører til
+
 subdomain_file = "subdomains.txt"
 subdomains = []
 alive = []
 not_alive = []
-domains = []
-
-print(not_alive)
-print(alive)
-print(subdomains)
 
 
 class CrtSh:
@@ -36,29 +41,32 @@ class CrtSh:
         """
         checks if url is valid and returns a response
 
+        if it is valid then it makes a request to the url and returns the response
+        if not valid prints out 'Invalid url' 
+
         Params:
         - url: (type: string) an url
 
         Returns:
         - response [type: string]: [return http response code]
         """
-        """ Checks if contains https or not. adds https:// at start if it does not contain it """
+        # Checks if contains https or not. adds https:// at start if it does not contain it
         new_url = self.check_if_contains_https(url)
-        """ Checks if its an valid url with validators dependency """
-
+        # Checks if its an valid url with validators dependency
         valid = validators.url(new_url)
-        """ 
-        if valid makes a request to the url and returns the response
-        if not valid prints out 'Invalid url' 
-        """
-        domains.append(new_url)
-        print(domains)
+
         if valid == True:
-            response = requests.get(new_url)
-            print("Got response. code: ", response)
-            return response
+            try:
+                response = requests.get(new_url)
+                print("Got response. code: ", response)
+            except requests.exceptions.RequestException as error:
+                print("connection error", error)
+                exit()
+            finally:
+                return response
         else:
             print("Invalid url")
+            exit()
 
     def task_2(self):
         pass
@@ -130,7 +138,8 @@ class CrtSh:
         """ Checks if the url contains https://. if not adds it to the url """
         url_start = "https://"
         search_url = re.search(url, url_start)
-        if search_url is None:
+        # noe feil her.
+        if search_url == None:
             new_url = "https://" + url
             print(new_url)
             return new_url
@@ -149,7 +158,7 @@ if __name__ == "__main__":
     if not args.domain:
         url_input = input("Enter an URL you want to check: ")
         crt_sh = CrtSh(url_input)
-        # crt_sh.task_1(url_input)
+        crt_sh.task_1(url_input)
         crt_sh.task_3()
     else:
         crt_sh = CrtSh(parser)
