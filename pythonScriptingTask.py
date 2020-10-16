@@ -63,7 +63,12 @@ class CrtSh:
                 print("connection error", error)
                 exit()
             finally:
-                return response
+                if response.status_code == 200:
+                    print("passed")
+                    return response
+                else:
+                    print("Did not get status 200")
+                    exit()
         else:
             print("Invalid url")
             exit()
