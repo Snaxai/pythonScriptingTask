@@ -65,15 +65,16 @@ class CrtSh:
 
     def task_3(self):
         """ 
-        Split the domains 
-        Scan each subdomain
-        Store them in a list
+        Open subdomains file
+        store the subdomains in a list
+        Search through the list to see if they respond
+        store the results in 2 seperate lists
 
         Params:
         - url: (type: string) an url
 
         Returns:
-        - 
+        - 2 lists and difference of the length of the lists
         """
         file = open(subdomain_file)
         subdomains = file.read().splitlines()
