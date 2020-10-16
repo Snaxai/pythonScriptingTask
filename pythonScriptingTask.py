@@ -18,7 +18,7 @@ import validators
 # legge til riktig oppgave der den hører til
 
 subdomain_file = "subdomains.txt"
-subdomains = []
+subdomainslist = []
 alive = []
 not_alive = []
 
@@ -39,10 +39,10 @@ class CrtSh:
 
     def task_1(self, url):
         """
-        checks if url is valid and returns a response
+        Checks if url is valid and returns a response
 
-        if it is valid then it makes a request to the url and returns the response
-        if not valid prints out 'Invalid url' 
+        If it is valid then it makes a request to the url and returns the response
+        If not valid prints out 'Invalid url' 
 
         Params:
         - url: (type: string) an url
@@ -73,10 +73,34 @@ class CrtSh:
             print("Invalid url")
             exit()
 
-    def task_2(self):
-        pass
+    def task_3(self, domain):
+        """
+        Finds subdomains
 
-    def task_3(self):
+        Params:
+        -
+
+        Returns:
+        -
+        """
+        print("domain: ", domain)
+        file = open('subdomains-100.txt')
+        content = file.read()
+        subdomains = content.splitlines()
+        i = 0
+        for subdomain in subdomains:
+            i = i + 1
+            url = f"http://{subdomain}.{domain}"
+            try:
+                requests.get(url)
+            except requests.ConnectionError:
+                pass
+            else:
+                subdomainslist.append(url)
+                print(i, "[+] Discovered a subdomain: ", url)
+        print(subdomainslist)
+
+    def task_4and5(self):
         """ 
         Open subdomains file
         store the subdomains in a list
@@ -89,35 +113,35 @@ class CrtSh:
         Returns:
         - 2 lists and difference of the length of the lists
         """
-        file = open(subdomain_file)
-        subdomains = file.read().splitlines()
-        print(subdomains)
+        #file = open(subdomain_file)
+        #subdomains = file.read().splitlines()
+        #print(subdomains)
         i = 0
 
-        for subdomain in subdomains:
+        for subdomain in subdomainslist:
             i = i + 1
             if subdomain != True:
-                subdomain_url = f'https://{subdomain}'
-                valid = validators.url(subdomain_url)
+                #subdomain_url = f'https://{subdomain}'
+                valid = validators.url(subdomain)
                 if valid == True:
                     try:
-                        response = requests.get(subdomain_url)
+                        response = requests.get(subdomain)
                         if response.status_code == 200:
-                            alive.append(subdomain_url)
+                            alive.append(subdomain)
                         else:
-                            not_alive.append(subdomain_url)
+                            not_alive.append(subdomain)
                     except requests.exceptions.RequestException as error:
                         print("connection error", error)
-                        not_alive.append(subdomain_url)
+                        not_alive.append(subdomain)
                         pass
                     finally:
-                        print(i, '[$] Your target domain :- ', subdomain_url)
+                        print(i, '[$] Your target domain :- ', subdomain)
                 else:
-                    print("not valid url: ", subdomain_url)
+                    print("not valid url: ", subdomain)
                     break
             else:
                 break
-        print("Total subdomains: ", len(subdomains))
+        print("Total subdomains: ", len(subdomainslist))
         print("----------")
         print("ALIVE SUBDOMAINS: ", alive)
         print("----------")
@@ -125,7 +149,7 @@ class CrtSh:
         print("----------")
 
         print(len(alive), "is alive | ", len(not_alive),
-              "is not alive | Difference is: ", len(alive)-len(not_alive))
+              "is not alive | Difference is: ", len(subdomainslist)-len(not_alive))
 
     def task_4(self):
         """ asd """
@@ -164,7 +188,8 @@ if __name__ == "__main__":
         url_input = input("Enter an URL you want to check: ")
         crt_sh = CrtSh(url_input)
         crt_sh.task_1(url_input)
-        crt_sh.task_3()
+        crt_sh.task_3(url_input)
+        crt_sh.task_4and5()
     else:
         crt_sh = CrtSh(parser)
         print(crt_sh.task_1(args.domain))
