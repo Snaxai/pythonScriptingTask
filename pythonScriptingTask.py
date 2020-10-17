@@ -4,6 +4,11 @@ import requests
 import argparse
 import re
 import validators
+#import multiprocessing as mp
+#from multiprocessing import Queue, Process, JoinableQueue
+from threading import Thread
+from queue import Queue
+import threading
 
 """ Contains the all the functions for the python scripting tasks in DAT234 """
 
@@ -17,10 +22,12 @@ import validators
 # regner ut differansen og printer ut dette
 # legge til riktig oppgave der den hører til
 
-subdomain_file = "subdomains.txt"
 subdomainslist = []
 alive = []
 not_alive = []
+
+#q = JoinableQueue()
+q = Queue()
 
 
 class CrtSh:
@@ -42,7 +49,7 @@ class CrtSh:
         Checks if url is valid and returns a response
 
         If it is valid then it makes a request to the url and returns the response
-        If not valid prints out 'Invalid url' 
+        If not valid prints out 'Invalid url'
 
         Params:
         - url: (type: string) an url
@@ -73,7 +80,7 @@ class CrtSh:
             print("Invalid url")
             exit()
 
-    def task_3(self, domain):
+    def task_3(self, domain, subdomains):
         """
         Finds potential subdomains
 
@@ -83,26 +90,28 @@ class CrtSh:
         Returns:
         - a list of subdomains
         """
-        print("domain: ", domain)
-        file = open('subdomains-100.txt')
-        content = file.read()
-        subdomains = content.splitlines()
-        i = 0
+        #print("domain: ", domain)
+        #file = open('subdomains-100.txt')
+        #content = file.read()
+        #subdomains = content.splitlines()
+        global q
         for subdomain in subdomains:
-            i = i + 1
+            #subdomain = q.get()
             url = f"http://{subdomain}.{domain}"
             try:
-                requests.get(url)
+                requests.get(url, timeout=100)
             except requests.ConnectionError:
                 pass
             else:
                 subdomainslist.append(url)
-                print(i, "[+] Discovered a subdomain: ", url)
-        print(subdomainslist)
+                print("[+] Discovered a subdomain:", url)
+
+            # q.task_done()
+        print(subdomainslist, q)
         return subdomainslist
 
     def task_4and5(self):
-        """ 
+        """
         Open subdomains file
         store the subdomains in a list
         Search through the list to see if they respond
@@ -112,17 +121,17 @@ class CrtSh:
         - url: (type: string) an url
 
         Returns:
-        - 2 lists, alive and not_alive 
+        - 2 lists, alive and not_alive
         """
-        #file = open(subdomain_file)
-        #subdomains = file.read().splitlines()
+        # file = open(subdomain_file)
+        # subdomains = file.read().splitlines()
         # print(subdomains)
         i = 0
 
         for subdomain in subdomainslist:
             i = i + 1
             if subdomain != True:
-                #subdomain_url = f'https://{subdomain}'
+                # subdomain_url = f'https://{subdomain}'
                 valid = validators.url(subdomain)
                 if valid == True:
                     try:
@@ -169,6 +178,17 @@ class CrtSh:
         else:
             return self
 
+    def mulitiproctask_3(self, domain, subdomains):
+        global q
+        print("multi task_3")
+        for subdomain in subdomains:
+            q.put(subdomain)
+
+        for t in range(8):
+            proc = Thread(target=self.task_3, args=(domain,))
+            #proc.daemon = True
+            proc.start()
+
 
 if __name__ == "__main__":
     """ Make a argument parser """
@@ -182,7 +202,12 @@ if __name__ == "__main__":
         url_input = input("Enter an URL you want to check: ")
         crt_sh = CrtSh(url_input)
         crt_sh.task_1(url_input)
-        crt_sh.task_3(url_input)
+        # Tried to set up task 3 to run in threads or multiprocesses
+        """ crt_sh.mulitiproctask_3(url_input, subdomains=open(
+            "subdomains-100.txt").read().splitlines())
+        q.join()"""
+        crt_sh.task_3(url_input, subdomains=open(
+            "subdomains-100.txt").read().splitlines())
         crt_sh.task_4and5()
     else:
         crt_sh = CrtSh(parser)
