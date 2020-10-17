@@ -90,13 +90,7 @@ class CrtSh:
         Returns:
         - a list of subdomains
         """
-        #print("domain: ", domain)
-        #file = open('subdomains-100.txt')
-        #content = file.read()
-        #subdomains = content.splitlines()
-        global q
         for subdomain in subdomains:
-            #subdomain = q.get()
             url = f"http://{subdomain}.{domain}"
             try:
                 requests.get(url, timeout=100)
@@ -106,8 +100,7 @@ class CrtSh:
                 subdomainslist.append(url)
                 print("[+] Discovered a subdomain:", url)
 
-            # q.task_done()
-        print(subdomainslist, q)
+        print(subdomainslist)
         return subdomainslist
 
     def task_4and5(self):
@@ -131,7 +124,6 @@ class CrtSh:
         for subdomain in subdomainslist:
             i = i + 1
             if subdomain != True:
-                # subdomain_url = f'https://{subdomain}'
                 valid = validators.url(subdomain)
                 if valid == True:
                     try:
@@ -159,12 +151,8 @@ class CrtSh:
         print("----------")
 
         print(len(alive), "is alive | ", len(not_alive),
-              "is not alive | Difference is: ", len(subdomainslist)-len(not_alive))
+              "is not alive | Difference is: ", len(subdomainslist)-len(alive))
         return alive, not_alive
-
-    def task_6(self):
-        """ Prints out the list and calculates the difference in alive and dead subdomains """
-        pass
 
     def check_if_contains_https(self, url):
         """ Checks if the url contains https://. if not adds it to the url """
@@ -178,16 +166,40 @@ class CrtSh:
         else:
             return self
 
-    def mulitiproctask_3(self, domain, subdomains):
+    def multiproc(self, domain, subdomains):
+        """
+        Setup for the multiprocessing
+
+        Params:
+        - domain (type: string) a domain entered by the user
+        - subdomain (type: list of strings) a list of subdomains
+        """
         global q
         print("multi task_3")
         for subdomain in subdomains:
             q.put(subdomain)
 
         for t in range(8):
-            proc = Thread(target=self.task_3, args=(domain,))
-            #proc.daemon = True
+            proc = Thread(target=self.multiproctask_3, args=(domain,))
+            proc.daemon = True
             proc.start()
+
+    def multiproctask_3(self, domain):
+        """
+        Finds potential subdomain with the help of multiprocessing
+        """
+        global q
+        while True:
+            subdomain = q.get()
+            url = f"http://{subdomain}.{domain}"
+            try:
+                requests.get(url)
+            except requests.ConnectionError:
+                pass
+            else:
+                subdomainslist.append(url)
+                print("[+] Discovered subdomain:", url)
+            q.task_done()
 
 
 if __name__ == "__main__":
@@ -202,16 +214,18 @@ if __name__ == "__main__":
         url_input = input("Enter an URL you want to check: ")
         crt_sh = CrtSh(url_input)
         crt_sh.task_1(url_input)
-        # Tried to set up task 3 to run in threads or multiprocesses
-        """ crt_sh.mulitiproctask_3(url_input, subdomains=open(
-            "subdomains-100.txt").read().splitlines())
-        q.join()"""
-        crt_sh.task_3(url_input, subdomains=open(
-            "subdomains-100.txt").read().splitlines())
+        # Multiprocess / threading for task 3
+        crt_sh.multiproc(url_input, subdomains=open(
+            "subdomains-1000.txt").read().splitlines())
+        q.join()
+        # Task 3 without multiprocessing / threading
+        # crt_sh.task_3(url_input, subdomains=open(
+        #    "subdomains-1000.txt").read().splitlines())
         crt_sh.task_4and5()
     else:
+        # this output here does not include the threading version
         crt_sh = CrtSh(parser)
         print(crt_sh.task_1(args.domain))
         crt_sh.task_3(args.domain, subdomains=open(
-            "subdomains-100.txt").read().splitlines())
+            "subdomains-1000.txt").read().splitlines())
         crt_sh.task_4and5()
