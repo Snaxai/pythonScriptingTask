@@ -212,3 +212,6 @@ if __name__ == "__main__":
     else:
         crt_sh = CrtSh(parser)
         print(crt_sh.task_1(args.domain))
+        crt_sh.task_3(args.domain, subdomains=open(
+            "subdomains-100.txt").read().splitlines())
+        crt_sh.task_4and5()
