@@ -75,13 +75,13 @@ class CrtSh:
 
     def task_3(self, domain):
         """
-        Finds subdomains
+        Finds potential subdomains
 
         Params:
-        -
+        - domain: (type: string) a domain
 
         Returns:
-        -
+        - a list of subdomains
         """
         print("domain: ", domain)
         file = open('subdomains-100.txt')
@@ -99,6 +99,7 @@ class CrtSh:
                 subdomainslist.append(url)
                 print(i, "[+] Discovered a subdomain: ", url)
         print(subdomainslist)
+        return subdomainslist
 
     def task_4and5(self):
         """ 
@@ -111,11 +112,11 @@ class CrtSh:
         - url: (type: string) an url
 
         Returns:
-        - 2 lists and difference of the length of the lists
+        - 2 lists, alive and not_alive 
         """
         #file = open(subdomain_file)
         #subdomains = file.read().splitlines()
-        #print(subdomains)
+        # print(subdomains)
         i = 0
 
         for subdomain in subdomainslist:
@@ -150,14 +151,7 @@ class CrtSh:
 
         print(len(alive), "is alive | ", len(not_alive),
               "is not alive | Difference is: ", len(subdomainslist)-len(not_alive))
-
-    def task_4(self):
-        """ asd """
-        pass
-
-    def task_5(self):
-        """ asd """
-        pass
+        return alive, not_alive
 
     def task_6(self):
         """ Prints out the list and calculates the difference in alive and dead subdomains """
