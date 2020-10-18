@@ -105,9 +105,7 @@ class CrtSh:
 
     def task_4and5(self):
         """
-        Open subdomains file
-        store the subdomains in a list
-        Search through the list to see if they respond
+        Search through a list of subdomains to see if they respond
         store the results in 2 seperate lists
 
         Params:
@@ -205,7 +203,7 @@ class CrtSh:
 if __name__ == "__main__":
     """ Make a argument parser """
     parser = argparse.ArgumentParser(description="crt_sh subdomain searcher")
-    """ add in option(s) for the argument parser """
+    """ Add in option(s) for the argument parser """
     parser.add_argument('-dn', '--domain',
                         help="What url do you want to check?", type=str)
 
