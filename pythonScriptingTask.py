@@ -32,14 +32,11 @@ q = Queue()
 
 class CrtSh:
     def __init__(self, url: str):
-        print("init")
         """
-        __init__ [summary]
-
-        [extended_summary]
+        inits class with an url
 
         Args:
-            url (type: string): [url??.. fill in more here]
+            url (type: string): a domain
         """
         self.url = url
         print("URLEN SOM BLE SKREVET INN:", url)
