@@ -1,28 +1,17 @@
 #!user/bin/env python3
 
 import requests
+import json
+import click
 import argparse
 import re
 import validators
-#import multiprocessing as mp
-#from multiprocessing import Queue, Process, JoinableQueue
 from threading import Thread
 from queue import Queue
 import threading
 
 """ Contains the all the functions for the python scripting tasks in DAT234 """
 
-# Skriver inn url
-# sjekker om den er riktig
-# sjekker subdomains -> legger dette i liste
-# sjekker gjennom lista og kjører requests til hvert subdomain
-# response 200 -> legger til i alive liste
-# ikke response 200 -> legger til not_alive liste
-# Printer ut alive og not_alive liste
-# regner ut differansen og printer ut dette
-# legge til riktig oppgave der den hører til
-
-subdomainslist = []
 alive = []
 not_alive = []
 
@@ -64,7 +53,7 @@ class CrtSh:
                 response = requests.get(new_url)
                 print("Got response. code: ", response)
             except requests.exceptions.RequestException as error:
-                print("connection error", error)
+                print("Connection error", error)
                 exit()
             finally:
                 if response.status_code == 200:
@@ -77,30 +66,35 @@ class CrtSh:
             print("Invalid url")
             exit()
 
-    def task_3(self, domain, subdomains):
+    def task_3(self, domain):
         """
-        Finds potential subdomains
+        Finds and gets subdomains from crt.sh site
 
         Params:
-        - domain: (type: string) a domain
+        - domain: (type: string)
 
         Returns:
         - a list of subdomains
         """
-        for subdomain in subdomains:
-            url = f"http://{subdomain}.{domain}"
-            try:
-                requests.get(url, timeout=100)
-            except requests.ConnectionError:
-                pass
-            else:
-                subdomainslist.append(url)
-                print("[+] Discovered a subdomain:", url)
+        try:
+            crt_request = requests.get(
+                f"https://crt.sh/?q=%.{domain}&output=json").json()
+        except requests.exceptions.ConnectionError:
+            click.secho("Failed to connect to CRT.SH, Try again.",
+                        bold=True, fg="red")
+        list_of_subdomains = []
+        for i in range(len(crt_request)):
+            list_of_subdomains.append(crt_request[i]['common_name'])
 
-        print(subdomainslist)
-        return subdomainslist
+        list_of_subdomains = list(dict.fromkeys(list_of_subdomains))
+        print(list_of_subdomains)
 
-    def task_4and5(self):
+        print("Subdomains hentet fra crtsh:")
+        print(list_of_subdomains, "\nLengden av denne listen er:",
+              len(list_of_subdomains))
+        return list_of_subdomains
+
+    def task_4and5(self, domain):
         """
         Search through a list of subdomains to see if they respond
         store the results in 2 seperate lists
@@ -111,34 +105,30 @@ class CrtSh:
         Returns:
         - 2 lists, alive and not_alive
         """
-        # file = open(subdomain_file)
-        # subdomains = file.read().splitlines()
-        # print(subdomains)
         i = 0
+        subdomainlist = self.task_3(domain)
 
-        for subdomain in subdomainslist:
+        for subdomain in subdomainlist:
             i = i + 1
+            subdomain = f"http://{subdomain}"
             if subdomain != True:
-                valid = validators.url(subdomain)
-                if valid == True:
-                    try:
-                        response = requests.get(subdomain)
-                        if response.status_code == 200:
-                            alive.append(subdomain)
-                        else:
-                            not_alive.append(subdomain)
-                    except requests.exceptions.RequestException as error:
-                        print("connection error", error)
+                try:
+                    response = requests.get(subdomain)
+                    if response.status_code == 200:
+                        print("try alive")
+                        alive.append(subdomain)
+                    else:
+                        print("try not_alive")
                         not_alive.append(subdomain)
-                        pass
-                    finally:
-                        print(i, '[$] Your target domain :- ', subdomain)
-                else:
-                    print("not valid url: ", subdomain)
-                    break
+                except requests.exceptions.RequestException as error:
+                    print("connection error", error)
+                    not_alive.append(subdomain)
+                    pass
+                finally:
+                    print(i, '[$] Your target domain :- ', subdomain)
             else:
                 break
-        print("Total subdomains: ", len(subdomainslist))
+        print("Total subdomains: ", len(subdomainlist))
         print("----------")
         print("ALIVE SUBDOMAINS: ", alive)
         print("----------")
@@ -146,21 +136,27 @@ class CrtSh:
         print("----------")
 
         print(len(alive), "is alive | ", len(not_alive),
-              "is not alive | Difference is: ", len(subdomainslist)-len(alive))
+              "is not alive | Difference is: ", len(subdomainlist)-len(alive))
         return alive, not_alive
 
     def check_if_contains_https(self, url):
-        """ Checks if the url contains https://. if not adds it to the url """
-        url_start = "https://"
-        search_url = re.search(url, url_start)
-        # noe feil her.
+        """ Checks if the url contains https://. if not adds it to the url 
+
+            Params:
+            - url (type: string) the url the user entered
+
+            Return:
+            - url (type: string) the url with https:// if it did not contain it already      
+        """
+        url_start = "^https://"
+        search_url = re.search("^https://", url)
         if search_url == None:
             new_url = "https://" + url
-            print(new_url)
             return new_url
         else:
-            return self
+            return self.url
 
+    # gammel kode fjerne denne??
     def multiproc(self, domain, subdomains):
         """
         Setup for the multiprocessing
@@ -179,6 +175,7 @@ class CrtSh:
             proc.daemon = True
             proc.start()
 
+    # gammel kode fjerne denne??
     def multiproctask_3(self, domain):
         """
         Finds potential subdomain with the help of multiprocessing
@@ -209,18 +206,8 @@ if __name__ == "__main__":
         url_input = input("Enter an URL you want to check: ")
         crt_sh = CrtSh(url_input)
         crt_sh.task_1(url_input)
-        # Multiprocess / threading for task 3
-        crt_sh.multiproc(url_input, subdomains=open(
-            "subdomains-1000.txt").read().splitlines())
-        q.join()
-        # Task 3 without multiprocessing / threading
-        # crt_sh.task_3(url_input, subdomains=open(
-        #    "subdomains-1000.txt").read().splitlines())
-        crt_sh.task_4and5()
+        crt_sh.task_4and5(url_input)
     else:
-        # this output here does not include the threading version
         crt_sh = CrtSh(parser)
         print(crt_sh.task_1(args.domain))
-        crt_sh.task_3(args.domain, subdomains=open(
-            "subdomains-1000.txt").read().splitlines())
-        crt_sh.task_4and5()
+        crt_sh.task_4and5(args.domain)
