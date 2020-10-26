@@ -43,14 +43,14 @@ class CrtSh:
         Returns:
         - response [type: string]: [return http response code]
         """
-        # Checks if contains https or not. adds https:// at start if it does not contain it
+        # Checks if contains https or not. removes https:// if it does contain it
         new_url = self.check_if_contains_https(url)
         # Checks if its an valid url with validators dependency
-        valid = validators.url(new_url)
+        valid = validators.url(f"https://{new_url}")
 
         if valid == True:
             try:
-                response = requests.get(new_url)
+                response = requests.get(f"https://{new_url}")
                 print("Got response. code: ", response)
             except requests.exceptions.RequestException as error:
                 print("Connection error", error)
@@ -76,9 +76,11 @@ class CrtSh:
         Returns:
         - a list of subdomains
         """
+        # Checks if contains https or not. removes https:// if it does contain it
+        new_domain = self.check_if_contains_https(domain)
         try:
             crt_request = requests.get(
-                f"https://crt.sh/?q=%.{domain}&output=json").json()
+                f"https://crt.sh/?q=%.{new_domain}&output=json").json()
         except requests.exceptions.ConnectionError:
             click.secho("Failed to connect to CRT.SH, Try again.",
                         bold=True, fg="red")
@@ -148,15 +150,15 @@ class CrtSh:
             Return:
             - url (type: string) the url with https:// if it did not contain it already      
         """
-        url_start = "^https://"
         search_url = re.search("^https://", url)
-        if search_url == None:
-            new_url = "https://" + url
+        if search_url != None:
+            new_url = url.replace("https://", "")
+            print(new_url)
             return new_url
         else:
             return self.url
 
-    # gammel kode fjerne denne??
+    # Et forsøk på multiprocessing / threading
     def multiproc(self, domain, subdomains):
         """
         Setup for the multiprocessing
@@ -171,26 +173,39 @@ class CrtSh:
             q.put(subdomain)
 
         for t in range(8):
-            proc = Thread(target=self.multiproctask_3, args=(domain,))
+            proc = Thread(target=self.multiproctask_4and5, args=(domain,))
             proc.daemon = True
             proc.start()
 
-    # gammel kode fjerne denne??
-    def multiproctask_3(self, domain):
+    # Et forsøk på multiprocessing / threading
+    def multiproctask_4and5(self, domain):
         """
         Finds potential subdomain with the help of multiprocessing
         """
         global q
         while True:
-            subdomain = q.get()
-            url = f"http://{subdomain}.{domain}"
-            try:
-                requests.get(url)
-            except requests.ConnectionError:
-                pass
+            subdomainlist = self.task_3(domain)
+
+        for subdomain in subdomainlist:
+            i = i + 1
+            subdomain = f"http://{subdomain}"
+            if subdomain != True:
+                try:
+                    response = requests.get(subdomain)
+                    if response.status_code == 200:
+                        print("try alive")
+                        alive.append(subdomain)
+                    else:
+                        print("try not_alive")
+                        not_alive.append(subdomain)
+                except requests.exceptions.RequestException as error:
+                    print("connection error", error)
+                    not_alive.append(subdomain)
+                    pass
+                finally:
+                    print(i, '[$] Your target domain :- ', subdomain)
             else:
-                subdomainslist.append(url)
-                print("[+] Discovered subdomain:", url)
+                break
             q.task_done()
 
 
